@@ -1,68 +1,65 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-
+#include <WiFiUdp.h>
 #include "wifi_config.h"
 #include "wifi_hal.h"
 #include "arm_controller.h"
 
-// Server y LED in HAL
-static ESP8266WebServer server(80);
+static WiFiUDP Udp;
+static const int LOCAL_PORT = 4210; // UDP Port where NodeMCU will listen for commands
 static const int LED_PIN = 2;
 
-// --- handlers HTTP (C++ for WebServer) ---
-static void handle_root() {
-    server.send(200, "text/plain", "ESP8266 Robotic Arm API (Base)");
-}
+// Receive data buffer
+char packetBuffer[255]; 
 
-static void handle_set() {
-    if (!server.hasArg("val")) {
-        server.send(400, "text/plain", "Missing val");
-        return;
-    }
-
-    int ang = server.arg("val").toInt();
-    if (ang < 0) ang = 0;
-    if (ang > 180) ang = 180;
-
-    arm_set_servo1((uint16_t)ang);
-
-    // feedback LED
-    digitalWrite(LED_PIN, LOW);
-    delay(30);
-    digitalWrite(LED_PIN, HIGH);
-
-    server.send(200, "text/plain", "OK");
-}
-
-// --- HAL interface ---
 void wifi_hal_init(void) {
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, HIGH);
 
+    // Router connection
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
 
-    Serial.print("Connecting to: ");
-    Serial.println(WIFI_SSID);
-
+    Serial.print("Connecting to WiFi");
     while (WiFi.status() != WL_CONNECTED) {
         delay(200);
         Serial.print(".");
     }
-
     Serial.println();
-    Serial.print("Connected. IP: ");
+    Serial.print("Given IP: ");
     Serial.println(WiFi.localIP());
 
-    server.on("/", HTTP_GET, handle_root);
-    server.on("/set", HTTP_GET, handle_set);
-    server.on("/set", HTTP_POST, handle_set);
-
-    server.begin();
-    Serial.println("HTTP server started");
+    // Start UDP listening
+    Udp.begin(LOCAL_PORT);
+    Serial.printf("Listening UDP at port %d\n", LOCAL_PORT);
 }
 
 void wifi_hal_task(void) {
-    server.handleClient();
+    // Check for new packet
+    int packetSize = Udp.parsePacket();
+    
+    if (packetSize) {
+        // Read UDP packet
+        int len = Udp.read(packetBuffer, 255);
+        
+        // Simple Binary protocol: [ID, ANGLE]
+        // Wait for 2 bytes 
+        // Byte 0: Servo ID (in this case, is 1)
+        // Byte 1: Angle (0-180)
+        
+        if (len >= 2) {
+            uint8_t servo_id = (uint8_t)packetBuffer[0];
+            uint8_t angle = (uint8_t)packetBuffer[1];
+
+            // Visual feedback
+            digitalWrite(LED_PIN, LOW); 
+            
+            if (servo_id == 1) {
+                arm_set_servo1((uint16_t)angle);
+            }
+            // here we will add if servo:id == 2...
+            
+            digitalWrite(LED_PIN, HIGH);
+        }
+    }
 }
