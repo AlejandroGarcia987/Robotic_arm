@@ -54,9 +54,7 @@ void wifi_hal_task(void) {
             // Visual feedback
             digitalWrite(LED_PIN, LOW); 
             
-            if (servo_id == 1) {
-                arm_set_servo1((uint16_t)angle);
-            }
+            arm_set_servo(servo_id, (uint16_t)angle);
             // here we will add if servo:id == 2...
             
             digitalWrite(LED_PIN, HIGH);

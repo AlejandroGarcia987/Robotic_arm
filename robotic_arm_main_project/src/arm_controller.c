@@ -1,23 +1,29 @@
 #include "arm_controller.h"
 
-static uint16_t target1 = 90;
-static uint16_t current1 = 90;
+static uint16_t target[ARM_MAX_SERVOS];
+static uint16_t current[ARM_MAX_SERVOS];
 
 void arm_init(void) {
-    target1 = 90;
-    current1 = 90;
+    for(int i = 0; i <= ARM_MAX_SERVOS; i++){
+        target[ARM_MAX_SERVOS] = 90;
+        current[ARM_MAX_SERVOS] = 90;
+    }
 }
 
-void arm_set_servo1(uint16_t angle) {
-    if (angle > 180) angle = 180;
-    target1 = angle;
+void arm_set_servo(uint8_t id, uint16_t angle) {
+    if( id == 0 || id > ARM_MAX_SERVOS) return;
+    if (angle > MAX_ANGLE) angle = MAX_ANGLE;
+    target[id - 1] = angle;
 }
 
 void arm_task_20ms(void) {
-    if (current1 < target1) current1++;
-    else if (current1 > target1) current1--;
+    for(int i = 0; i < ARM_MAX_SERVOS; i++){
+        if(current[i] < target[i]) current[i]++;
+        else if(current[i] > target[i]) current[i]--;
+    }
 }
 
-uint16_t arm_get_servo1(void) {
-    return current1;
+uint16_t arm_get_servo(uint8_t id) {
+    if (id == 0 || id > ARM_MAX_SERVOS) return DEFAULT_START_ANGLE;
+    return current[id - 1];
 }
