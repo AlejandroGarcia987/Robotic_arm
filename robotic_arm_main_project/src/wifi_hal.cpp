@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
+#include "WiFi.h"
 #include "wifi_config.h"
 #include "wifi_hal.h"
 #include "arm_controller.h"

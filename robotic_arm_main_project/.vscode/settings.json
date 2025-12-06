@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "globals.h": "c",
+        "esp_types.h": "c",
+        "type_traits": "cpp"
+    }
+}
