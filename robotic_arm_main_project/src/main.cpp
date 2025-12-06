@@ -7,10 +7,24 @@
 
 static Servo servos[ARM_MAX_SERVOS];
 
-static const int SERVO_PINS[ARM_MAX_SERVOS] = {
-    32, //SERVO1 GPIO32
-    //extend for more
+typedef struct {
+    uint8_t pwm_pin;
+    uint8_t feedback_pin;
+} ServoConfig;
+
+static const ServoConfig ARM_CONFIG[ARM_MAX_SERVOS] = {
+
+// Servo 1
+    { 
+        .pwm_pin = 32, 
+        .feedback_pin = 33, 
+    },
 };
+
+uint16_t feedback_array[5];
+uint16_t feedback_sum;
+uint16_t feedback_result;
+uint16_t feedback_adc;
 
 
 void setup() {
@@ -18,12 +32,9 @@ void setup() {
     delay(10);
 
     // HAL servo Arduino
-    for(int i = 0; i < ARM_MAX_SERVOS; i ++){
-        if(SERVO_PINS[i] >= 0){
-            servos[i].attach(SERVO_PINS[i]);
-            servos[i].write(90);
-            delay(500);
-        }
+    for (uint i = 0; i < ARM_MAX_SERVOS; i++){
+        servos[i].attach(ARM_CONFIG[i].pwm_pin);
+        pinMode(ARM_CONFIG[i].feedback_pin, INPUT);
     }
 
     arm_init();
@@ -43,9 +54,20 @@ void loop() {
         arm_task_20ms();
 
         //Apply logic output
-        for (int i = 0; i < ARM_MAX_SERVOS; i++){
-            if(SERVO_PINS[i] >= 0){
+        for(uint8_t i = 0; i < ARM_MAX_SERVOS; i++){
+            if(ARM_CONFIG[i].pwm_pin != 0){
                 servos[i].write(arm_get_servo(i + 1));
+                for(uint i = 0; i < 5; i++){
+                    feedback_array[i] = feedback_adc = analogReadMilliVolts(ARM_CONFIG[i].feedback_pin);
+                }
+                for(uint i = 0; i < 5; i++){
+                    feedback_sum += feedback_array[i];
+                }
+                feedback_result = feedback_sum/5;
+                Serial.printf("adc: %d\n",feedback_result);
+                feedback_array[5] = 0;
+                feedback_sum = 0;
+                feedback_result = 0;
             }
         }
     }
