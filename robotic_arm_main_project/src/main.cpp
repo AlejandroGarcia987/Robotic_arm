@@ -8,12 +8,7 @@
 static Servo servos[ARM_MAX_SERVOS];
 
 static const int SERVO_PINS[ARM_MAX_SERVOS] = {
-<<<<<<< Updated upstream
-    5, //SERVO1 D1/GPIO5
-    4, //SERVO2 D2/GPIO4
-=======
     32, //SERVO1 GPIO32
->>>>>>> Stashed changes
     //extend for more
 };
 
